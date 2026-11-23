@@ -1,377 +1,540 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIKD Browser - BPK RI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config={theme:{extend:{colors:{
-        primary:{50:'#f0f4ff',100:'#dbe4ff',500:'#5c7cfa',600:'#4c6ef5',700:'#4263eb'},
-        mint:{50:'#e6fcf5',100:'#c3fae8',500:'#20c997'},
-        coral:{50:'#fff5f5',500:'#ff6b6b'},
-        indigo:{50:'#edf2ff',100:'#dbe4ff',500:'#5c6bc0',600:'#3f51b5'},
-    }}}}</script>
-    <style>
-        body{font-family:'Plus Jakarta Sans',sans-serif}
-        .gradient-text{background:linear-gradient(135deg,#3f51b5,#5c6bc0);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .hero-bg{background:radial-gradient(ellipse at 20% 50%,rgba(63,81,181,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(76,110,245,.06) 0%,transparent 50%),linear-gradient(180deg,#f5f7ff,#fff)}
-        .card{background:#fff;border-radius:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #f1f3f5}
-        .fade-in{animation:fadeIn .3s ease-out}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .row-l0{font-weight:800;background:#edf2ff;font-size:.875rem}
-        .row-l1{font-weight:700;background:#f8f9fa;font-size:.8125rem;padding-left:1.5rem!important}
-        .row-l2{font-size:.8125rem;padding-left:2.5rem!important}
-        .pct-good{color:#0ca678}
-        .pct-warn{color:#f59f00}
-        .pct-bad{color:#e03131}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIKD Browser - BPK RI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#F3F2EE; --surface:#FFFFFF; --surface-2:#F7F6F2;
+  --line:#E4E1D9; --line-strong:#CDC9BF;
+  --ink:#141518; --ink-2:#4A4D55; --muted:#7C7F87; --grid:rgba(20,21,24,.045);
+  --accent:#0F6E5E; --accent-hover:#0B5A4D; --accent-ink:#FFFFFF;
+  --good:#0F7A57; --warn:#A96400; --bad:#C23A2B;
+  --sans:'Instrument Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0B0C0D; --surface:#121415; --surface-2:#171A1B;
+    --line:#232729; --line-strong:#33393B;
+    --ink:#ECEDE9; --ink-2:#B4B8B4; --muted:#7F8689; --grid:rgba(236,237,233,.035);
+    --accent:#45D0AB; --accent-hover:#62DDBB; --accent-ink:#04241D;
+    --good:#4FD39F; --warn:#EFB24A; --bad:#FF7B6B;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;position:relative}
+/* kertas grafik tipis di area atas */
+body::before{content:"";position:absolute;inset:0 0 auto 0;height:440px;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:16px;padding-right:16px}
+@media (min-width:760px){.wrap{padding-left:24px;padding-right:24px}}
+
+/* Bar atas */
+.bar{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
+.bar-in{height:54px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;color:inherit;text-decoration:none}
+.brand img{width:24px;height:24px;object-fit:contain;flex:none}
+.brand b{font:600 15px/1 var(--sans);letter-spacing:-.02em;white-space:nowrap}
+.brand small{font:11px/1 var(--mono);color:var(--muted);padding-left:10px;border-left:1px solid var(--line-strong);white-space:nowrap}
+.seg{margin-left:auto;display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:var(--surface);flex:none}
+.seg button{appearance:none;border:0;background:transparent;font:500 13px/1 var(--sans);color:var(--muted);padding:8px 12px;border-radius:6px;cursor:pointer;transition:color .15s,background .15s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+main.wrap{padding-top:22px}
+
+/* Bar query */
+.q{display:grid;grid-template-columns:120px minmax(0,1.4fr) minmax(0,1.6fr) 150px auto;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 10px 28px -20px rgba(0,0,0,.25)}
+.q-cmp{grid-template-columns:170px minmax(0,1.4fr) minmax(0,1.6fr) 150px auto}
+.f{position:relative;background:var(--surface);padding:10px 14px 9px;min-width:0;transition:background .15s}
+.f:focus-within{background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.f::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .2s}
+.f:focus-within::after{transform:scaleX(1)}
+.f.dd::before{content:"";position:absolute;right:15px;bottom:15px;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);pointer-events:none}
+.f label{display:block;font:500 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.f select,.f input{appearance:none;-webkit-appearance:none;border:0;outline:0;background:transparent;width:100%;margin:0;
+  font:500 14px/1.3 var(--sans);color:var(--ink);padding:0 18px 0 0;cursor:pointer;text-overflow:ellipsis}
+.f input{cursor:text;font:500 13.5px/1.3 var(--mono);padding-right:0}
+.f select option{color:var(--ink);background:var(--surface)}
+.acts{background:var(--surface);display:flex;align-items:center;gap:6px;padding:8px}
+.btn{appearance:none;border:0;font:600 13px/1 var(--sans);height:40px;padding:0 16px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.55;cursor:progress}
+.btn-p{background:var(--accent);color:var(--accent-ink)}
+.btn-p:hover{background:var(--accent-hover)}
+.btn-p kbd{font:500 11px/1 var(--mono);padding:3px 5px;border-radius:4px;background:rgba(255,255,255,.18)}
+.btn-g{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}
+.btn-g:hover{background:var(--surface-2)}
+.btn svg{width:15px;height:15px;flex:none}
+
+/* Judul hasil */
+.ctx{display:flex;align-items:baseline;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;margin:28px 0 12px}
+.ctx h2{margin:0;font:600 19px/1.25 var(--sans);letter-spacing:-.02em}
+.ctx span{font:12px/1.4 var(--mono);color:var(--muted)}
+
+/* Ringkasan */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.kpi{background:var(--surface);padding:14px 16px 16px;min-width:0}
+.kpi .lbl{display:flex;justify-content:space-between;gap:8px;font:500 10.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.kpi .big{font:500 23px/1.1 var(--mono);letter-spacing:-.03em;margin:14px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .big small{font-size:12px;letter-spacing:0;color:var(--muted);margin:0 2px 0 4px}
+.kpi .big small:first-child{margin-left:0}
+.kpi .sub{font:12px/1.3 var(--mono);color:var(--muted)}
+.meter{height:3px;border-radius:2px;background:var(--line);margin-top:14px;overflow:hidden}
+.meter i{display:block;height:100%;background:currentColor;border-radius:2px;transform-origin:left;
+  animation:grow .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--d,0s) + .15s)}
+.meter-note{margin-top:14px;font:11px/1 var(--mono);color:var(--muted)}
+
+/* Tabel */
+.tbl{margin-top:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow-x:auto}
+.tbl table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.tbl th{font:500 10.5px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:right;
+  padding:11px 14px;border-bottom:1px solid var(--line-strong);white-space:nowrap;background:var(--surface);vertical-align:bottom}
+.tbl td{padding:7px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl th.akun,.tbl td.akun{text-align:left}
+.tbl td.akun{white-space:normal;min-width:260px;width:46%}
+.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;font-size:12.5px}
+.dim{color:var(--muted)}
+.tbl tr.l0 td{background:var(--surface-2);font-weight:600;border-top:1px solid var(--line-strong)}
+.tbl tbody tr.l0:first-child td{border-top:0}
+.tbl tr.l0 td.akun{font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+.tbl tr.l1 td.akun{padding-left:28px;font-weight:600}
+.tbl tr.l2 td.akun{padding-left:44px;color:var(--ink-2)}
+.tbl tr.l2 td.n{color:var(--ink-2)}
+.tbl tbody tr:hover td{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.cap{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.mini{width:46px;height:4px;border-radius:2px;background:var(--line);overflow:hidden;flex:none}
+.mini b{display:block;height:100%;background:currentColor;border-radius:2px}
+.tbl td.p-good,.tbl td.p-warn,.tbl td.p-bad{font-weight:500}
+.p-good{color:var(--good)!important} .p-warn{color:var(--warn)!important} .p-bad{color:var(--bad)!important}
+/* Tabel banding: kolom akun menempel saat digeser */
+.cmp td.akun{min-width:220px;width:auto;max-width:320px}
+.cmp td.akun,.cmp th.akun{position:sticky;left:0;z-index:1;box-shadow:inset -1px 0 0 var(--line)}
+.cmp th.yr{text-align:center;color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.02em;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+.cmp .ys{border-left:1px solid var(--line)}
+.unit{margin:8px 2px 0;font:11.5px/1.4 var(--mono);color:var(--muted)}
+
+/* Status */
+.empty{margin-top:16px;border:1px dashed var(--line-strong);border-radius:var(--r);padding:44px 20px;text-align:center}
+.empty b{display:block;font-weight:600;font-size:14px;color:var(--ink-2)}
+.empty p{margin:6px 0 0;font:12px/1.5 var(--mono);color:var(--muted)}
+.msg{--c:var(--bad);margin-top:16px;border:1px solid var(--line);border-left:3px solid var(--c);background:var(--surface);border-radius:8px;padding:12px 16px}
+.msg.is-warn{--c:var(--warn)}
+.msg b{display:block;font:600 10.5px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--c);margin-bottom:6px}
+.msg p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.sk{height:10px;border-radius:3px;background:linear-gradient(90deg,var(--line) 25%,var(--surface-2) 50%,var(--line) 75%);background-size:300% 100%;animation:sh 1.3s ease-in-out infinite}
+.sk-big{height:22px;width:70%;margin:14px 0 10px}
+.sk-tbl{padding:4px 14px}
+.sk-row{display:flex;gap:24px;padding:12px 0;border-bottom:1px solid var(--line)}
+.sk-row:last-child{border-bottom:0}
+.sk-row .sk:first-child{margin-right:auto}
+
+/* Footer */
+.foot{margin-top:56px;padding-top:16px;padding-bottom:28px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;font:11.5px/1.5 var(--mono);color:var(--muted)}
+.foot a{color:inherit;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+.foot a:hover{color:var(--ink)}
+
+/* Gerak */
+.rise{animation:rise .4s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}}
+@keyframes grow{from{transform:scaleX(0)}}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+@media (max-width:860px){
+  .q,.q-cmp{grid-template-columns:1fr 1fr}
+  .acts{grid-column:1/-1}
+  .acts .btn-p{flex:1}
+  .kpis{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .brand small{display:none}
+  .kpi{padding:12px 12px 14px}
+  .kpi .big{font-size:18px}
+  .tbl td.akun{min-width:200px}
+  .ctx h2{font-size:17px}
+}
+</style>
 </head>
-<body class="min-h-screen hero-bg">
-    <header class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-            <img src="/static/bpk-logo.png" alt="BPK" class="w-10 h-10 object-contain">
-            <div>
-                <h1 class="text-lg font-bold gradient-text">SIKD Browser</h1>
-                <p class="text-xs text-gray-400">Data APBD dari DJPK Kemenkeu</p>
-            </div>
-        </div>
-    </header>
+<body>
+<header class="bar">
+  <div class="wrap bar-in">
+    <a class="brand" href="/">
+      <img src="/static/bpk-logo.png" alt="" width="24" height="24">
+      <b>SIKD Browser</b>
+      <small>APBD Pemda · DJPK Kemenkeu</small>
+    </a>
+    <nav class="seg" role="tablist" aria-label="Mode tampilan">
+      <button role="tab" id="tabBrowse" aria-selected="true" aria-controls="tab-browse" onclick="switchTab('browse')">Lihat APBD</button>
+      <button role="tab" id="tabCompare" aria-selected="false" aria-controls="tab-compare" onclick="switchTab('compare')">Bandingkan</button>
+    </nav>
+  </div>
+</header>
 
-    <main class="max-w-5xl mx-auto px-4 py-6 space-y-5">
-        <!-- Hero -->
-        <section class="text-center py-4 fade-in">
-            <div class="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-500/20 text-indigo-600 text-xs font-bold px-4 py-1.5 rounded-full mb-3">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                Tools BPK RI
-            </div>
-            <h2 class="text-3xl font-extrabold text-gray-900 mb-1">SIKD Browser</h2>
-            <p class="text-lg text-gray-500 mb-1">by <span class="font-bold gradient-text">Bashid Effendi</span></p>
-            <p class="text-sm text-gray-400 max-w-lg mx-auto">Jelajahi data APBD seluruh Pemda di Indonesia — Pendapatan, Belanja, dan Pembiayaan Daerah</p>
-        </section>
+<main class="wrap">
+  <!-- Lihat APBD -->
+  <section id="tab-browse" role="tabpanel" aria-labelledby="tabBrowse">
+    <div class="q">
+      <div class="f dd"><label for="tahun">Tahun</label><select id="tahun" onchange="loadProvinsi()"></select></div>
+      <div class="f dd"><label for="provinsi">Provinsi</label><select id="provinsi" onchange="loadPemda()"><option value="--">Semua provinsi</option></select></div>
+      <div class="f dd"><label for="pemda">Pemda</label><select id="pemda"><option value="--">Semua pemda</option></select></div>
+      <div class="f dd"><label for="periode">Realisasi s.d.</label><select id="periode"></select></div>
+      <div class="acts">
+        <button class="btn btn-p" onclick="loadAPBD()">Tampilkan <kbd>↵</kbd></button>
+        <button class="btn btn-g" onclick="downloadExcel('single', this)" title="Unduh sebagai file Excel">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>
+          Excel
+        </button>
+      </div>
+    </div>
+    <div id="apbdResult">
+      <div class="empty"><b>Pilih tahun dan wilayah, lalu tekan Tampilkan.</b><p>Provinsi dan pemda dikosongkan = gabungan seluruh pemda se-Indonesia.</p></div>
+    </div>
+  </section>
 
-        <!-- Tabs -->
-        <div class="flex gap-2 justify-center">
-            <button class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white" onclick="switchTab('browse')" id="tabBrowse">Lihat APBD</button>
-            <button class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-500" onclick="switchTab('compare')" id="tabCompare">Bandingkan Antar Tahun</button>
-        </div>
+  <!-- Bandingkan antar tahun -->
+  <section id="tab-compare" role="tabpanel" aria-labelledby="tabCompare" hidden>
+    <div class="q q-cmp">
+      <div class="f"><label for="compareTahun">Tahun (pisah koma)</label><input type="text" id="compareTahun" value="2023,2024,2025" inputmode="numeric" autocomplete="off" spellcheck="false"></div>
+      <div class="f dd"><label for="compareProvinsi">Provinsi</label><select id="compareProvinsi" onchange="loadComparePemda()"><option value="--">Pilih provinsi</option></select></div>
+      <div class="f dd"><label for="comparePemda">Pemda</label><select id="comparePemda"><option value="--">Pilih pemda</option></select></div>
+      <div class="f dd"><label for="comparePeriode">Realisasi s.d.</label><select id="comparePeriode"></select></div>
+      <div class="acts">
+        <button class="btn btn-p" onclick="loadCompare()">Bandingkan <kbd>↵</kbd></button>
+        <button class="btn btn-g" onclick="downloadExcel('compare', this)" title="Unduh sebagai file Excel">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>
+          Excel
+        </button>
+      </div>
+    </div>
+    <div id="compareResult">
+      <div class="empty"><b>Isi tahun yang mau dibandingkan, lalu pilih provinsi dan pemda.</b><p>Maksimal 10 tahun sekali banding, misal 2021,2022,2023,2024,2025.</p></div>
+    </div>
+  </section>
+</main>
 
-        <!-- TAB: Browse -->
-        <section id="tab-browse" class="space-y-4">
-            <div class="card p-5">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Tahun</label>
-                        <select id="tahun" onchange="loadProvinsi()" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <script>for(let y=2026;y>=2011;y--) document.write(`<option value="${y}"${y===2025?' selected':''}>${y}</option>`)</script>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Provinsi</label>
-                        <select id="provinsi" onchange="loadPemda()" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <option value="--">Semua Provinsi</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Pemda</label>
-                        <select id="pemda" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <option value="--">Semua Pemda</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Periode (Bulan)</label>
-                        <select id="periode" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <script>for(let m=12;m>=1;m--) document.write(`<option value="${m}"${m===12?' selected':''}>${m}</option>`)</script>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-3 flex gap-2">
-                    <button onclick="loadAPBD()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-sm transition-all">Tampilkan Data APBD</button>
-                    <button onclick="downloadExcel('single')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-xl text-sm transition-all flex items-center gap-1.5" title="Download Excel">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Excel
-                    </button>
-                </div>
-            </div>
-            <div id="apbdResult"></div>
-        </section>
-
-        <!-- TAB: Compare -->
-        <section id="tab-compare" class="space-y-4 hidden">
-            <div class="card p-5">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Tahun (pisah koma)</label>
-                        <input type="text" id="compareTahun" value="2023,2024,2025" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Provinsi</label>
-                        <select id="compareProvinsi" onchange="loadComparePemda()" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <option value="--">Pilih Provinsi</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Pemda</label>
-                        <select id="comparePemda" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <option value="--">Pilih Pemda</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Periode</label>
-                        <select id="comparePeriode" class="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 outline-none">
-                            <script>for(let m=12;m>=1;m--) document.write(`<option value="${m}"${m===12?' selected':''}>${m}</option>`)</script>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-3 flex gap-2">
-                    <button onclick="loadCompare()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-sm transition-all">Bandingkan</button>
-                    <button onclick="downloadExcel('compare')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-xl text-sm transition-all flex items-center gap-1.5" title="Download Excel">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Excel
-                    </button>
-                </div>
-            </div>
-            <div id="compareResult"></div>
-        </section>
-    </main>
-
-    <footer class="text-center py-6">
-        <p class="text-sm font-semibold text-gray-400">SIKD Browser <span class="gradient-text">by Bashid Effendi</span></p>
-        <p class="text-xs text-gray-300">Data dari <a href="https://djpk.kemenkeu.go.id" target="_blank" class="underline">DJPK Kementerian Keuangan</a></p>
-    </footer>
+<footer class="wrap foot">
+  <span>Sumber data: <a href="https://djpk.kemenkeu.go.id" target="_blank" rel="noopener">DJPK Kementerian Keuangan</a></span>
+  <span>SIKD Browser · Bashid Effendi</span>
+</footer>
 
 <script>
-function switchTab(tab) {
-    document.getElementById('tab-browse').classList.toggle('hidden', tab !== 'browse');
-    document.getElementById('tab-compare').classList.toggle('hidden', tab !== 'compare');
-    document.getElementById('tabBrowse').className = `tab-btn px-4 py-2 rounded-xl text-sm font-semibold ${tab==='browse'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-500'}`;
-    document.getElementById('tabCompare').className = `tab-btn px-4 py-2 rounded-xl text-sm font-semibold ${tab==='compare'?'bg-indigo-600 text-white':'bg-gray-100 text-gray-500'}`;
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const $ = id => document.getElementById(id);
+const selText = id => $(id).selectedOptions[0]?.text || '';
+const MSG_OFFLINE = 'Gagal menghubungi server. Cek koneksi internet lalu coba lagi.';
+let reqBrowse = 0, reqCompare = 0;
+
+function initForm() {
+    const th = $('tahun');
+    for (let y = 2026; y >= 2011; y--) th.add(new Option(y, y, y === 2025, y === 2025));
+    ['periode', 'comparePeriode'].forEach(id => {
+        for (let m = 12; m >= 1; m--) $(id).add(new Option(BULAN[m - 1], m, m === 12, m === 12));
+    });
+    // Enter = jalankan query (kecuali sedang fokus di tombol, biar tidak dobel)
+    $('tab-browse').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.isComposing && e.target.tagName !== 'BUTTON') { e.preventDefault(); loadAPBD(); }
+    });
+    $('tab-compare').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.isComposing && e.target.tagName !== 'BUTTON') { e.preventDefault(); loadCompare(); }
+    });
 }
 
-// Load provinsi on page load
+function switchTab(tab) {
+    const isBrowse = tab === 'browse';
+    $('tab-browse').hidden = !isBrowse;
+    $('tab-compare').hidden = isBrowse;
+    $('tabBrowse').setAttribute('aria-selected', isBrowse);
+    $('tabCompare').setAttribute('aria-selected', !isBrowse);
+}
+
+// Isi <select> dari list {kode, nama}; pertahankan pilihan `keep` kalau masih ada.
+function fillSelect(sel, placeholder, items, keep) {
+    sel.innerHTML = `<option value="--">${esc(placeholder)}</option>` +
+        items.map(p => `<option value="${esc(p.kode)}">${esc(p.nama)}</option>`).join('');
+    if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+
+// Load provinsi saat halaman dibuka & tiap ganti tahun
 async function loadProvinsi() {
-    const tahun = document.getElementById('tahun').value;
+    const tahun = $('tahun').value;
+    const sel = $('provinsi');
+    const prevProv = sel.value;
+    const prevPemda = $('pemda').value;
     try {
         const resp = await fetch(`/api/provinsi?tahun=${tahun}`);
         const data = await resp.json();
-        const sel = document.getElementById('provinsi');
-        sel.innerHTML = '<option value="--">Semua Provinsi</option>';
-        data.forEach(p => sel.innerHTML += `<option value="${p.kode}">${p.nama}</option>`);
-        // Also populate compare
-        const sel2 = document.getElementById('compareProvinsi');
-        sel2.innerHTML = '<option value="--">Pilih Provinsi</option>';
-        data.forEach(p => sel2.innerHTML += `<option value="${p.kode}">${p.nama}</option>`);
-    } catch(e) {}
+        if (Array.isArray(data)) {
+            fillSelect(sel, 'Semua provinsi', data, prevProv);
+            // Tab Bandingkan cukup diisi sekali (daftar pemda-nya pakai tahun 2025)
+            const sel2 = $('compareProvinsi');
+            if (sel2.options.length <= 1) fillSelect(sel2, 'Pilih provinsi', data);
+        }
+    } catch (e) {}
+    // Pemda wajib dimuat ulang supaya selalu cocok dengan provinsi & tahun yang aktif.
+    // Dulu pemda lama tetap terpilih padahal provinsi sudah reset ke "Semua" -> DJPK balas 500.
+    await loadPemda(prevPemda);
 }
 
-async function loadPemda() {
-    const prov = document.getElementById('provinsi').value;
-    const tahun = document.getElementById('tahun').value;
-    const sel = document.getElementById('pemda');
-    sel.innerHTML = '<option value="--">Semua Pemda</option>';
+async function loadPemda(keep) {
+    const prov = $('provinsi').value;
+    const tahun = $('tahun').value;
+    const sel = $('pemda');
+    sel.innerHTML = '<option value="--">Semua pemda</option>';
     if (prov === '--') return;
     try {
         const resp = await fetch(`/api/pemda?provinsi=${prov}&tahun=${tahun}`);
         const data = await resp.json();
-        data.forEach(p => sel.innerHTML += `<option value="${p.kode}">${p.nama}</option>`);
-    } catch(e) {}
+        if (Array.isArray(data)) fillSelect(sel, 'Semua pemda', data, keep);
+    } catch (e) {}
 }
 
 async function loadComparePemda() {
-    const prov = document.getElementById('compareProvinsi').value;
-    const sel = document.getElementById('comparePemda');
-    sel.innerHTML = '<option value="--">Pilih Pemda</option>';
+    const prov = $('compareProvinsi').value;
+    const sel = $('comparePemda');
+    sel.innerHTML = '<option value="--">Pilih pemda</option>';
     if (prov === '--') return;
     try {
         const resp = await fetch(`/api/pemda?provinsi=${prov}&tahun=2025`);
         const data = await resp.json();
-        data.forEach(p => sel.innerHTML += `<option value="${p.kode}">${p.nama}</option>`);
-    } catch(e) {}
+        if (Array.isArray(data)) fillSelect(sel, 'Pilih pemda', data);
+    } catch (e) {}
 }
 
-// APBD Data
+// ---------- Lihat APBD ----------
 async function loadAPBD() {
-    const tahun = document.getElementById('tahun').value;
-    const provinsi = document.getElementById('provinsi').value;
-    const pemda = document.getElementById('pemda').value;
-    const periode = document.getElementById('periode').value;
-    const el = document.getElementById('apbdResult');
-
-    el.innerHTML = '<div class="text-center py-8"><div class="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-sm text-gray-400 mt-2">Memuat data APBD...</p></div>';
-
+    const q = {tahun: $('tahun').value, provinsi: $('provinsi').value, pemda: $('pemda').value, periode: $('periode').value};
+    const ctx = {
+        judul: q.pemda !== '--' ? selText('pemda')
+             : q.provinsi !== '--' ? `${selText('provinsi')}, gabungan seluruh pemda`
+             : 'Nasional, gabungan seluruh pemda',
+        tahun: q.tahun,
+        bulan: BULAN[q.periode - 1],
+    };
+    const el = $('apbdResult');
+    const my = ++reqBrowse;
+    el.innerHTML = skeleton(true);
     try {
-        const params = new URLSearchParams({tahun, provinsi, pemda, periode});
-        const resp = await fetch('/api/apbd?' + params);
+        const resp = await fetch('/api/apbd?' + new URLSearchParams(q));
         const data = await resp.json();
-        if (data.error) { el.innerHTML = renderError(data.error); return; }
-        renderAPBD(data, el, tahun);
-    } catch(err) {
-        el.innerHTML = renderError(err.message);
+        if (my !== reqBrowse) return;  // sudah ada query yang lebih baru
+        if (data.error && !(data.rows || []).length) { el.innerHTML = renderError(data.error); return; }
+        renderAPBD(data, el, ctx);
+    } catch (err) {
+        if (my === reqBrowse) el.innerHTML = renderError(MSG_OFFLINE);
     }
 }
 
-function renderAPBD(data, el, tahun) {
-    if (!data.rows || !data.rows.length) {
-        el.innerHTML = '<div class="card p-6 text-center text-gray-400 text-sm">Data tidak tersedia</div>';
-        return;
-    }
+function renderAPBD(data, el, ctx) {
+    const rows = data.rows || [];
+    if (!rows.length) { el.innerHTML = renderEmpty('Data tidak tersedia untuk pilihan ini.', 'Coba tahun atau periode lain.'); return; }
+    const top = re => rows.find(r => r.level === 0 && re.test(r.akun));
+    const pend = top(/^pendapatan/i), bel = top(/^belanja/i), pemb = top(/^pembiayaan/i);
 
-    // Summary cards
-    const pendapatan = data.rows.find(r => r.akun === 'Pendapatan Daerah');
-    const belanja = data.rows.find(r => r.akun === 'Belanja Daerah');
-    const pembiayaan = data.rows.find(r => r.akun === 'Pembiayaan Daerah');
-
-    let html = `<div class="fade-in space-y-4">
-        <div class="grid grid-cols-3 gap-3">
-            ${summaryCard('Pendapatan', pendapatan, '#0ca678')}
-            ${summaryCard('Belanja', belanja, '#e03131')}
-            ${summaryCard('Pembiayaan', pembiayaan, '#1971c2')}
-        </div>
-        <div class="card overflow-x-auto">
-            <table class="w-full text-xs">
-                <thead><tr class="bg-indigo-600 text-white">
-                    <th class="py-2.5 px-3 text-left">Akun</th>
-                    <th class="py-2.5 px-3 text-right">Anggaran (Rp)</th>
-                    <th class="py-2.5 px-3 text-right">Realisasi (Rp)</th>
-                    <th class="py-2.5 px-3 text-right w-20">%</th>
-                </tr></thead><tbody>`;
-
-    data.rows.forEach(r => {
-        const cls = r.level === 0 ? 'row-l0' : r.level === 1 ? 'row-l1' : 'row-l2';
-        const pctClass = pctColor(r.persentase);
-        html += `<tr class="${cls} border-b border-gray-50">
-            <td class="py-1.5 px-3">${esc(r.akun)}</td>
-            <td class="py-1.5 px-3 text-right font-mono">${fmtRp(r.anggaran)}</td>
-            <td class="py-1.5 px-3 text-right font-mono">${fmtRp(r.realisasi)}</td>
-            <td class="py-1.5 px-3 text-right font-bold ${pctClass}">${r.persentase ? r.persentase + '%' : '-'}</td>
-        </tr>`;
-    });
-
-    html += '</tbody></table></div></div>';
-    el.innerHTML = html;
+    el.innerHTML = `
+      <div class="ctx rise"><h2>${esc(ctx.judul)}</h2><span>TA ${esc(ctx.tahun)} · realisasi s.d. ${esc(ctx.bulan)} · ${rows.length} akun</span></div>
+      <div class="kpis">${kpi('Pendapatan', pend, 0)}${kpi('Belanja', bel, 1)}${kpi('Pembiayaan', pemb, 2)}${kpiSurplus(pend, bel, 3)}</div>
+      <div class="tbl rise" style="--d:.14s"><table>
+        <thead><tr><th class="akun">Akun</th><th>Anggaran</th><th>Realisasi</th><th>Capaian</th></tr></thead>
+        <tbody>${rows.map(r => `<tr class="l${r.level}"><td class="akun">${esc(r.akun)}</td><td class="n">${fmtRp(r.anggaran)}</td><td class="n">${fmtRp(r.realisasi)}</td>${capCell(r.persentase)}</tr>`).join('')}</tbody>
+      </table></div>
+      <p class="unit">Nilai dalam rupiah. Capaian = realisasi ÷ anggaran. Angka dalam kurung = negatif.</p>`;
 }
 
-function summaryCard(label, row, color) {
-    if (!row) return `<div class="card p-4 text-center"><p class="text-xs text-gray-400">${label}</p><p class="text-gray-300">N/A</p></div>`;
-    return `<div class="card p-4 text-center" style="border-top:3px solid ${color}">
-        <p class="text-xs text-gray-400 mb-1">${label}</p>
-        <p class="text-sm font-extrabold text-gray-800">${fmtRpShort(row.anggaran)}</p>
-        <p class="text-xs text-gray-400 mt-0.5">Realisasi: <span class="font-bold" style="color:${color}">${fmtRpShort(row.realisasi)}</span></p>
-        <p class="text-xs font-bold mt-0.5 ${pctColor(row.persentase)}">${row.persentase}%</p>
+function kpi(label, row, i) {
+    const d = `style="--d:${i * 0.05}s"`;
+    if (!row) return `<div class="kpi rise" ${d}><div class="lbl"><span>${label}</span></div><div class="big dim">—</div><div class="sub">tidak ada di data</div></div>`;
+    const p = parseFloat(row.persentase);
+    const cls = pctClass(p);
+    return `<div class="kpi rise" ${d}>
+        <div class="lbl"><span>${label}</span><span class="${cls}">${fmtPct(p)}</span></div>
+        <div class="big">${fmtShort(row.realisasi, true)}</div>
+        <div class="sub">dari anggaran ${fmtShort(row.anggaran)}</div>
+        <div class="meter ${cls}" ${d}><i style="width:${meterW(p)}%"></i></div>
     </div>`;
 }
 
-// Compare
+function kpiSurplus(pend, bel, i) {
+    const d = `style="--d:${i * 0.05}s"`;
+    if (!pend || !bel) return `<div class="kpi rise" ${d}><div class="lbl"><span>Surplus/defisit</span></div><div class="big dim">—</div><div class="sub">tidak bisa dihitung</div></div>`;
+    const real = pend.realisasi - bel.realisasi;
+    const angg = pend.anggaran - bel.anggaran;
+    return `<div class="kpi rise" ${d}>
+        <div class="lbl"><span>${real < 0 ? 'Defisit' : 'Surplus'}</span><span>realisasi</span></div>
+        <div class="big ${real < 0 ? 'p-bad' : ''}">${fmtShort(real, true)}</div>
+        <div class="sub">anggaran ${fmtShort(angg)}</div>
+        <div class="meter-note">pendapatan − belanja</div>
+    </div>`;
+}
+
+// ---------- Bandingkan ----------
 async function loadCompare() {
-    const tahun = document.getElementById('compareTahun').value.trim();
-    const provinsi = document.getElementById('compareProvinsi').value;
-    const pemda = document.getElementById('comparePemda').value;
-    const periode = document.getElementById('comparePeriode').value;
-    const el = document.getElementById('compareResult');
-
-    if (provinsi === '--' || pemda === '--') { alert('Pilih Provinsi dan Pemda untuk membandingkan'); return; }
-
-    el.innerHTML = '<div class="text-center py-8"><div class="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-sm text-gray-400 mt-2">Memuat data perbandingan...</p></div>';
-
+    const q = {tahun: $('compareTahun').value.trim(), provinsi: $('compareProvinsi').value, pemda: $('comparePemda').value, periode: $('comparePeriode').value};
+    const el = $('compareResult');
+    if (q.provinsi === '--' || q.pemda === '--') { el.innerHTML = renderError('Pilih provinsi dan pemda dulu.', 'Belum lengkap'); return; }
+    const ctx = {judul: selText('comparePemda'), bulan: BULAN[q.periode - 1]};
+    const my = ++reqCompare;
+    el.innerHTML = skeleton(false);
     try {
-        const params = new URLSearchParams({tahun, provinsi, pemda, periode});
-        const resp = await fetch('/api/compare?' + params);
+        const resp = await fetch('/api/compare?' + new URLSearchParams(q));
         const data = await resp.json();
-        renderCompare(data, el);
-    } catch(err) {
-        el.innerHTML = renderError(err.message);
+        if (my !== reqCompare) return;
+        if (data.error) { el.innerHTML = renderError(data.error); return; }
+        renderCompare(data, el, ctx);
+    } catch (err) {
+        if (my === reqCompare) el.innerHTML = renderError(MSG_OFFLINE);
     }
 }
 
-function renderCompare(data, el) {
+function renderCompare(data, el, ctx) {
     const years = Object.keys(data).sort();
-    if (!years.length) { el.innerHTML = renderError('Tidak ada data'); return; }
+    const ok = years.filter(y => (data[y].rows || []).length);
+    const gagal = years.filter(y => !(data[y].rows || []).length);
+    if (!ok.length) {
+        el.innerHTML = renderError((years.length && data[years[0]].error) || 'Data tidak tersedia untuk tahun-tahun ini.');
+        return;
+    }
 
-    // Collect all unique akun names
-    const allAkun = [];
-    const akunSet = new Set();
-    years.forEach(y => {
-        (data[y].rows || []).forEach(r => {
-            if (!akunSet.has(r.akun)) { akunSet.add(r.akun); allAkun.push({akun: r.akun, level: r.level}); }
+    // Gabungan akun dari semua tahun (urutan kemunculan pertama) + index per tahun
+    const akun = [], seen = new Set(), idx = {};
+    ok.forEach(y => {
+        idx[y] = new Map();
+        data[y].rows.forEach(r => {
+            if (!idx[y].has(r.akun)) idx[y].set(r.akun, r);
+            if (!seen.has(r.akun)) { seen.add(r.akun); akun.push(r); }
         });
     });
 
-    let html = `<div class="card overflow-x-auto fade-in">
-        <table class="w-full text-xs">
-            <thead><tr class="bg-indigo-600 text-white">
-                <th class="py-2.5 px-3 text-left">Akun</th>`;
-    years.forEach(y => {
-        html += `<th class="py-2.5 px-2 text-right">Anggaran ${y}</th><th class="py-2.5 px-2 text-right">Realisasi ${y}</th><th class="py-2.5 px-2 text-right w-14">%</th>`;
-    });
-    html += '</tr></thead><tbody>';
+    const head1 = `<th class="akun" rowspan="2">Akun</th>` + ok.map(y => `<th class="yr" colspan="3">${esc(y)}</th>`).join('');
+    const head2 = ok.map(() => `<th class="ys">Anggaran</th><th>Realisasi</th><th>Capaian</th>`).join('');
+    const body = akun.map(a => `<tr class="l${a.level}"><td class="akun">${esc(a.akun)}</td>${ok.map(y => {
+        const r = idx[y].get(a.akun);
+        return r ? `<td class="n ys">${fmtRp(r.anggaran)}</td><td class="n">${fmtRp(r.realisasi)}</td>${capCell(r.persentase)}`
+                 : `<td class="n ys dim">—</td><td class="n dim">—</td><td class="n dim">—</td>`;
+    }).join('')}</tr>`).join('');
+    const note = gagal.length
+        ? `<div class="msg is-warn rise" role="status"><b>Tahun ${gagal.map(esc).join(', ')} tidak ditampilkan</b><p>${esc(data[gagal[0]].error || 'Data tidak tersedia.')}</p></div>`
+        : '';
 
-    allAkun.forEach(a => {
-        const cls = a.level === 0 ? 'row-l0' : a.level === 1 ? 'row-l1' : 'row-l2';
-        html += `<tr class="${cls} border-b border-gray-50"><td class="py-1.5 px-3">${esc(a.akun)}</td>`;
-        years.forEach(y => {
-            const row = (data[y].rows || []).find(r => r.akun === a.akun);
-            if (row) {
-                html += `<td class="py-1.5 px-2 text-right font-mono">${fmtRp(row.anggaran)}</td>`;
-                html += `<td class="py-1.5 px-2 text-right font-mono">${fmtRp(row.realisasi)}</td>`;
-                html += `<td class="py-1.5 px-2 text-right font-bold ${pctColor(row.persentase)}">${row.persentase?row.persentase+'%':'-'}</td>`;
-            } else {
-                html += '<td class="py-1.5 px-2 text-center text-gray-300">-</td>'.repeat(3);
-            }
-        });
-        html += '</tr>';
-    });
-
-    html += '</tbody></table></div>';
-    el.innerHTML = html;
+    el.innerHTML = `
+      <div class="ctx rise"><h2>${esc(ctx.judul)}</h2><span>TA ${ok.map(esc).join(' · ')} · realisasi s.d. ${esc(ctx.bulan)}</span></div>
+      ${note}
+      <div class="tbl cmp rise" style="--d:.08s"><table><thead><tr>${head1}</tr><tr>${head2}</tr></thead><tbody>${body}</tbody></table></div>
+      <p class="unit">Nilai dalam rupiah. Geser tabel ke samping untuk tahun berikutnya.</p>`;
 }
 
-// Helpers
+// ---------- Helpers ----------
 function fmtRp(n) {
-    if (!n || n === 0) return '-';
-    return Math.round(n).toLocaleString('id-ID');
+    if (n == null || isNaN(n) || n === 0) return '<span class="dim">—</span>';
+    const s = Math.round(Math.abs(n)).toLocaleString('id-ID');
+    return n < 0 ? `(${s})` : s;
 }
-function fmtRpShort(n) {
-    if (!n) return '-';
-    if (n >= 1e12) return (n/1e12).toFixed(2) + ' T';
-    if (n >= 1e9) return (n/1e9).toFixed(2) + ' M';
-    if (n >= 1e6) return (n/1e6).toFixed(0) + ' Jt';
-    return Math.round(n).toLocaleString('id-ID');
+// Ringkas: 2,04 T / 512,30 M / 87,10 Jt. html=true -> satuan dibuat kecil.
+function fmtShort(n, html) {
+    if (n == null || isNaN(n)) return '—';
+    const a = Math.abs(n);
+    const [v, u] = a >= 1e12 ? [a / 1e12, 'T'] : a >= 1e9 ? [a / 1e9, 'M'] : a >= 1e6 ? [a / 1e6, 'Jt'] : [a, ''];
+    const num = v.toLocaleString('id-ID', {minimumFractionDigits: u ? 2 : 0, maximumFractionDigits: u ? 2 : 0});
+    const body = html ? `<small>Rp</small>${num}${u ? `<small>${u}</small>` : ''}` : `Rp ${num}${u ? ' ' + u : ''}`;
+    return n < 0 ? `(${body})` : body;
 }
-function pctColor(p) {
-    const v = parseFloat(p);
-    if (isNaN(v)) return '';
-    if (v >= 90 && v <= 110) return 'pct-good';
-    if (v >= 70) return 'pct-warn';
-    return 'pct-bad';
+function fmtPct(p) {
+    return isNaN(p) ? '—' : p.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '%';
 }
-function esc(s) { return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function renderError(msg) { return `<div class="card p-5 text-center"><p class="text-red-500 text-sm">${esc(msg)}</p></div>`; }
+function meterW(p) { return isNaN(p) ? 0 : Math.max(0, Math.min(p, 100)); }
+function pctClass(p) {
+    if (isNaN(p)) return '';
+    if (p >= 90 && p <= 110) return 'p-good';
+    if (p >= 70) return 'p-warn';
+    return 'p-bad';
+}
+function capCell(raw) {
+    const p = parseFloat(raw);
+    if (isNaN(p)) return '<td class="n dim">—</td>';
+    return `<td class="n ${pctClass(p)}"><div class="cap"><span>${fmtPct(p)}</span><i class="mini"><b style="width:${meterW(p)}%"></b></i></div></td>`;
+}
+function esc(s) { return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function renderError(msg, title = 'Gagal memuat data') {
+    return `<div class="msg rise" role="alert"><b>${esc(title)}</b><p>${esc(msg)}</p></div>`;
+}
+function renderEmpty(title, sub) {
+    return `<div class="empty rise"><b>${esc(title)}</b><p>${esc(sub)}</p></div>`;
+}
+function skeleton(withKpi) {
+    const k = withKpi
+        ? `<div class="kpis">${'<div class="kpi"><div class="sk" style="width:45%"></div><div class="sk sk-big"></div><div class="sk" style="width:60%"></div></div>'.repeat(4)}</div>`
+        : '';
+    const w = [46, 32, 38, 28, 52, 36, 30, 44, 34];
+    const rows = w.map(x => `<div class="sk-row"><div class="sk" style="width:${x}%"></div><div class="sk" style="width:13%"></div><div class="sk" style="width:13%"></div></div>`).join('');
+    return `<div aria-busy="true" aria-label="Memuat data"><div class="ctx"><div class="sk" style="width:240px;height:16px"></div></div>${k}<div class="tbl sk-tbl">${rows}</div></div>`;
+}
 
-// Download Excel
-function downloadExcel(mode) {
+// ---------- Download Excel ----------
+async function downloadExcel(mode, btn) {
     let params, filename;
+    const el = $(mode === 'compare' ? 'compareResult' : 'apbdResult');
     if (mode === 'compare') {
-        const tahunList = document.getElementById('compareTahun').value.trim();
-        const provinsi = document.getElementById('compareProvinsi').value;
-        const pemda = document.getElementById('comparePemda').value;
-        const periode = document.getElementById('comparePeriode').value;
-        if (provinsi === '--' || pemda === '--') { alert('Pilih Provinsi dan Pemda dulu'); return; }
-        const namaPemda = document.getElementById('comparePemda').selectedOptions[0]?.text || 'Pemda';
-        filename = `APBD_${namaPemda.replace(/[^a-zA-Z0-9]/g,'_')}_${tahunList.replace(/,/g,'-')}`;
+        const tahunList = $('compareTahun').value.trim();
+        const provinsi = $('compareProvinsi').value;
+        const pemda = $('comparePemda').value;
+        const periode = $('comparePeriode').value;
+        if (provinsi === '--' || pemda === '--') { el.innerHTML = renderError('Pilih provinsi dan pemda dulu.', 'Belum lengkap'); return; }
+        const namaPemda = selText('comparePemda') || 'Pemda';
+        filename = `APBD_${namaPemda.replace(/[^a-zA-Z0-9]/g, '_')}_${tahunList.replace(/,/g, '-')}`;
         params = new URLSearchParams({mode, tahun_list: tahunList, provinsi, pemda, periode, filename});
     } else {
-        const tahun = document.getElementById('tahun').value;
-        const provinsi = document.getElementById('provinsi').value;
-        const pemda = document.getElementById('pemda').value;
-        const periode = document.getElementById('periode').value;
-        const namaPemda = document.getElementById('pemda').selectedOptions[0]?.text || (provinsi==='--'?'Semua':'Pemda');
-        filename = `APBD_${namaPemda.replace(/[^a-zA-Z0-9]/g,'_')}_${tahun}`;
+        const tahun = $('tahun').value;
+        const provinsi = $('provinsi').value;
+        const pemda = $('pemda').value;
+        const periode = $('periode').value;
+        const namaPemda = pemda !== '--' ? selText('pemda') : (provinsi === '--' ? 'Semua' : selText('provinsi'));
+        filename = `APBD_${namaPemda.replace(/[^a-zA-Z0-9]/g, '_')}_${tahun}`;
         params = new URLSearchParams({mode, tahun, provinsi, pemda, periode, filename});
     }
-    window.location.href = '/api/download-excel?' + params;
+    // Pakai fetch (bukan pindah halaman) supaya kalau gagal, pesannya tampil di sini,
+    // bukan halaman "500 Internal Server Error" polos.
+    if (btn) btn.disabled = true;
+    try {
+        const resp = await fetch('/api/download-excel?' + params);
+        if (!resp.ok) {
+            let msg = 'Gagal membuat file Excel. Coba lagi beberapa saat lagi.';
+            try { msg = (await resp.json()).error || msg; } catch (e) {}
+            el.innerHTML = renderError(msg, 'File Excel gagal dibuat');
+            return;
+        }
+        const url = URL.createObjectURL(await resp.blob());
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        el.innerHTML = renderError(MSG_OFFLINE, 'File Excel gagal dibuat');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 }
 
 // Init
+initForm();
 loadProvinsi();
 </script>
 </body>

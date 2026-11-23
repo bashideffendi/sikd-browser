@@ -5,11 +5,62 @@ Jelajahi data APBD dari DJPK Kemenkeu
 
 import os
 import io
+import re
 import atexit
 from flask import Flask, request, jsonify, render_template, send_file
 import sikd_client
+from sikd_client import DJPKError
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+TAHUN_RE = re.compile(r'^\d{4}$')
+KODE_RE = re.compile(r'^\d{2}$')
+MAKS_TAHUN_BANDING = 10
+MSG_UMUM = 'Terjadi kesalahan di server. Coba lagi beberapa saat lagi.'
+
+
+def _pesan_tahun(t):
+    return f'Tahun "{t[:10]}" tidak valid. Tulis 4 digit, pisahkan dengan koma (misal 2023,2024,2025).'
+
+
+def _validasi(tahun_list, provinsi, pemda, periode):
+    """Cek parameter sebelum diteruskan ke DJPK. Return pesan error atau None."""
+    if not tahun_list:
+        return 'Tahun harus diisi (misal 2023,2024,2025).'
+    if len(tahun_list) > MAKS_TAHUN_BANDING:
+        return f'Maksimal {MAKS_TAHUN_BANDING} tahun sekali banding.'
+    for t in tahun_list:
+        if not TAHUN_RE.match(t):
+            return _pesan_tahun(t)
+    if not (periode.isdigit() and 1 <= int(periode) <= 12):
+        return 'Periode harus angka bulan 1 sampai 12.'
+    if provinsi != '--' and not KODE_RE.match(provinsi):
+        return 'Kode provinsi tidak valid.'
+    if pemda != '--' and not KODE_RE.match(pemda):
+        return 'Kode pemda tidak valid.'
+    # DJPK balas 500 kalau pemda diisi tapi provinsi "semua"
+    if pemda != '--' and provinsi == '--':
+        return 'Pilih provinsi dulu sebelum memilih pemda.'
+    return None
+
+
+def _parse_tahun_list(s):
+    return [t.strip() for t in s.split(',') if t.strip()]
+
+
+def _bad_request(msg):
+    return jsonify({'error': msg}), 400
+
+
+def _djpk_gagal(e):
+    """DJPK menolak / tidak merespons. Detail teknis cuma ke log, user dapat pesan ramah."""
+    app.logger.warning('DJPK gagal: %s', e.detail)
+    return jsonify({'error': str(e)}), 502
+
+
+def _error_umum():
+    app.logger.exception('Error tak terduga')
+    return jsonify({'error': MSG_UMUM}), 500
 
 
 @app.route('/')
@@ -20,24 +71,30 @@ def index():
 @app.route('/api/provinsi')
 def api_provinsi():
     tahun = request.args.get('tahun', '2025')
+    if not TAHUN_RE.match(tahun):
+        return _bad_request(_pesan_tahun(tahun))
     try:
-        data = sikd_client.get_provinsi(tahun)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify(sikd_client.get_provinsi(tahun))
+    except DJPKError as e:
+        return _djpk_gagal(e)
+    except Exception:
+        return _error_umum()
 
 
 @app.route('/api/pemda')
 def api_pemda():
     provinsi = request.args.get('provinsi', '')
     tahun = request.args.get('tahun', '2025')
-    if not provinsi:
-        return jsonify({'error': 'Parameter provinsi harus diisi'}), 400
+    if not KODE_RE.match(provinsi):
+        return _bad_request('Pilih provinsi dulu.')
+    if not TAHUN_RE.match(tahun):
+        return _bad_request(_pesan_tahun(tahun))
     try:
-        data = sikd_client.get_pemda(provinsi, tahun)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify(sikd_client.get_pemda(provinsi, tahun))
+    except DJPKError as e:
+        return _djpk_gagal(e)
+    except Exception:
+        return _error_umum()
 
 
 @app.route('/api/apbd')
@@ -46,29 +103,30 @@ def api_apbd():
     provinsi = request.args.get('provinsi', '--')
     pemda = request.args.get('pemda', '--')
     periode = request.args.get('periode', '12')
+    err = _validasi([tahun], provinsi, pemda, periode)
+    if err:
+        return _bad_request(err)
     try:
-        data = sikd_client.get_apbd(tahun, provinsi, pemda, periode)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify(sikd_client.get_apbd(tahun, provinsi, pemda, periode))
+    except DJPKError as e:
+        return _djpk_gagal(e)
+    except Exception:
+        return _error_umum()
 
 
 @app.route('/api/compare')
 def api_compare():
-    tahun_str = request.args.get('tahun', '')  # comma-separated: 2023,2024,2025
+    tahun_list = _parse_tahun_list(request.args.get('tahun', ''))  # 2023,2024,2025
     provinsi = request.args.get('provinsi', '--')
     pemda = request.args.get('pemda', '--')
     periode = request.args.get('periode', '12')
-
-    if not tahun_str:
-        return jsonify({'error': 'Parameter tahun harus diisi (misal: 2023,2024,2025)'}), 400
-
-    tahun_list = [t.strip() for t in tahun_str.split(',') if t.strip()]
+    err = _validasi(tahun_list, provinsi, pemda, periode)
+    if err:
+        return _bad_request(err)
     try:
-        data = sikd_client.get_apbd_compare(tahun_list, provinsi, pemda, periode)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify(sikd_client.get_apbd_compare(tahun_list, provinsi, pemda, periode))
+    except Exception:
+        return _error_umum()
 
 
 @app.route('/api/download-excel')
@@ -83,7 +141,29 @@ def api_download_excel():
     periode = request.args.get('periode', '12')
     mode = request.args.get('mode', 'single')  # 'single' atau 'compare'
     tahun_list_str = request.args.get('tahun_list', '')
-    filename = request.args.get('filename', 'APBD')
+    filename = re.sub(r'[^A-Za-z0-9_-]', '_', request.args.get('filename', ''))[:120] or 'APBD'
+
+    is_compare = mode == 'compare'
+    tahun_list = _parse_tahun_list(tahun_list_str) if is_compare else [tahun]
+    err = _validasi(tahun_list, provinsi, pemda, periode)
+    if err:
+        return _bad_request(err)
+
+    # Ambil data dulu; kalau gagal/kosong, kirim pesan JSON (bukan file Excel kosong / halaman 500 polos)
+    try:
+        if is_compare:
+            all_data = sikd_client.get_apbd_compare(tahun_list, provinsi, pemda, periode)
+            if not any(d.get('rows') for d in all_data.values()):
+                pesan = next((d['error'] for d in all_data.values() if d.get('error')), None)
+                return jsonify({'error': pesan or 'Data tidak tersedia untuk tahun-tahun yang dipilih.'}), 404
+        else:
+            data = sikd_client.get_apbd(tahun, provinsi, pemda, periode)
+            if not data.get('rows'):
+                return jsonify({'error': data.get('error') or 'Data tidak tersedia untuk parameter yang dipilih.'}), 404
+    except DJPKError as e:
+        return _djpk_gagal(e)
+    except Exception:
+        return _error_umum()
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -101,12 +181,8 @@ def api_download_excel():
         top=Side(style='thin'), bottom=Side(style='thin')
     )
 
-    if mode == 'compare' and tahun_list_str:
-        # Compare mode
-        tahun_list = [t.strip() for t in tahun_list_str.split(',') if t.strip()]
+    if is_compare:
         ws.title = "Perbandingan APBD"
-
-        all_data = sikd_client.get_apbd_compare(tahun_list, provinsi, pemda, periode)
         years = sorted(all_data.keys())
 
         # Collect all unique akun
@@ -171,8 +247,6 @@ def api_download_excel():
     else:
         # Single year mode
         ws.title = f"APBD {tahun}"
-
-        data = sikd_client.get_apbd(tahun, provinsi, pemda, periode)
         rows = data.get('rows', [])
 
         headers = ['Akun', 'Anggaran', 'Realisasi', '%']

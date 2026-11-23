@@ -17,27 +17,50 @@ HEADERS = {
 _session = requests.Session()
 _session.headers.update(HEADERS)
 
+MSG_DJPK_TOLAK = ('Data tidak tersedia di DJPK untuk kombinasi tahun, provinsi, dan pemda ini, '
+                  'atau server DJPK sedang bermasalah. Coba ganti pilihan atau ulangi beberapa saat lagi.')
+MSG_DJPK_DOWN = 'Server DJPK tidak merespons. Coba lagi beberapa saat lagi.'
+
+
+class DJPKError(Exception):
+    """Gagal ambil data dari DJPK. `str(e)` aman ditampilkan ke user; detail teknis ada di `detail`."""
+
+    def __init__(self, message, detail=''):
+        super().__init__(message)
+        self.detail = detail
+
+
+def _get(url, **kwargs):
+    """GET ke DJPK; semua kegagalan jaringan/HTTP diubah jadi DJPKError dengan pesan yang ramah."""
+    try:
+        r = _session.get(url, **kwargs)
+        r.raise_for_status()
+        return r
+    except requests.HTTPError as e:
+        raise DJPKError(MSG_DJPK_TOLAK, detail=str(e)) from e
+    except requests.RequestException as e:
+        raise DJPKError(MSG_DJPK_DOWN, detail=str(e)) from e
+
+
+def _kode_nama_list(r):
+    """Respons DJPK {kode: nama} -> [{kode, nama}]."""
+    try:
+        data = r.json()
+    except ValueError as e:
+        raise DJPKError(MSG_DJPK_TOLAK, detail=f'respons bukan JSON: {e}') from e
+    if not isinstance(data, dict):
+        raise DJPKError(MSG_DJPK_TOLAK, detail=f'format respons tak terduga: {type(data).__name__}')
+    return [{"kode": str(kode), "nama": str(nama)} for kode, nama in data.items()]
+
 
 def get_provinsi(tahun):
     """Get list of provinces for a given year."""
-    r = _session.get(f"{BASE_URL}/provinsi/{tahun}", timeout=15)
-    r.raise_for_status()
-    data = r.json()
-    result = []
-    for kode, nama in data.items():
-        result.append({"kode": kode, "nama": nama})
-    return result
+    return _kode_nama_list(_get(f"{BASE_URL}/provinsi/{tahun}", timeout=15))
 
 
 def get_pemda(provinsi_kode, tahun):
     """Get list of local governments for a province and year."""
-    r = _session.get(f"{BASE_URL}/pemda/{provinsi_kode}/{tahun}", timeout=15)
-    r.raise_for_status()
-    data = r.json()
-    result = []
-    for kode, nama in data.items():
-        result.append({"kode": kode, "nama": nama})
-    return result
+    return _kode_nama_list(_get(f"{BASE_URL}/pemda/{provinsi_kode}/{tahun}", timeout=15))
 
 
 def get_apbd(tahun, provinsi='--', pemda='--', periode='12'):
@@ -55,8 +78,7 @@ def get_apbd(tahun, provinsi='--', pemda='--', periode='12'):
         'pemda': pemda,
     }
 
-    r = _session.get(url, params=params, timeout=30)
-    r.raise_for_status()
+    r = _get(url, params=params, timeout=30)
 
     content = r.text.strip()
     if not content or '<Workbook' not in content:
@@ -72,9 +94,31 @@ def get_apbd_compare(tahun_list, provinsi, pemda, periode='12'):
         try:
             data = get_apbd(tahun, provinsi, pemda, periode)
             results[str(tahun)] = data
-        except Exception as e:
+        except DJPKError as e:
             results[str(tahun)] = {'error': str(e), 'rows': []}
     return results
+
+
+# DJPK memberi tepat 1 spasi di depan SEMUA akun, jadi level tidak bisa dibaca dari indentasi.
+# Level ditentukan dari nama akun (berlaku untuk format lama 2011-an dan format Permendagri 77/2020).
+_LEVEL0 = re.compile(r'^(pendapatan|belanja|pembiayaan)( daerah)?$', re.I)
+_LEVEL1 = re.compile(
+    r'^(pad|tkdd|dana perimbangan|pendapatan lainnya|lain-lain pendapatan( daerah)?( yang sah)?'
+    r'|belanja (tidak langsung|langsung|operasi|lainnya|transfer)'
+    r'|(penerimaan|pengeluaran) pembiayaan( daerah)?)$', re.I)
+
+
+def _level_akun(akun, seen_l1):
+    """0 = kelompok (Pendapatan/Belanja/Pembiayaan), 1 = subtotal (PAD, TKDD, ...), 2 = rincian."""
+    if _LEVEL0.match(akun):
+        seen_l1.clear()
+        return 0
+    key = akun.lower()
+    # Nama subtotal yang muncul lagi di kelompok yang sama = rinciannya (mis. "Pendapatan Lainnya" 2011)
+    if _LEVEL1.match(akun) and key not in seen_l1:
+        seen_l1.add(key)
+        return 1
+    return 2
 
 
 def _parse_xml_spreadsheet(xml_text):
@@ -126,19 +170,10 @@ def _parse_xml_spreadsheet(xml_text):
 
     # Categorize rows
     categorized = []
+    seen_l1 = set()
     for row in rows:
-        akun_raw = str(row.get('Akun', ''))
-        # Hitung level dari jumlah leading spaces (1 space = level 1, 2+ spaces = level 2)
-        stripped = akun_raw.lstrip()
-        indent = len(akun_raw) - len(stripped)
-        if indent >= 2:
-            level = 2
-        elif indent == 1:
-            level = 1
-        else:
-            level = 0
-
-        akun = stripped.strip()
+        akun = str(row.get('Akun', '')).strip()
+        level = _level_akun(akun, seen_l1)
         anggaran = row.get('Anggaran', 0)
         realisasi = row.get('Realisasi', 0)
         persentase = row.get('Persentase', '')
